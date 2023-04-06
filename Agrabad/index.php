@@ -51,6 +51,8 @@ require 'sqlconnect.php';
 
 <body>
     <?php
+    //Reservation
+
     $sql = "SELECT ItemID, [Date], fldTime, PropertyID, PropertyName, fldBookingNo, fldArrDate, fldDeptDate, fldNoOfNight, fldNoOfRoom, fldRoomNo, fldRoomType, fldGuestName, fldCompanyName, fldPhnNumber, fldEmail, fldPAX, fldAdvance, fldBooleans, fldSentTime, fldMessageID, fldDeliveryStatus, fldSMSCount, fldCurrentCredit FROM tblBookingRSMS WHERE (fldBooleans IN (1, 2)) and PropertyID='SM002' order by fldBooleans";
     $stmt = sqlsrv_query($conn, $sql);
 
@@ -104,9 +106,11 @@ require 'sqlconnect.php';
         $conn2 = sqlsrv_connect($serverName2, $connectionInfo2);
 
         if ($conn2) {
-            $sql2 = "UPDATE tblBookingRSMS SET fldBooleans = 0,fldSMSCount='$SMSCount', fldCurrentCredit='$CurrentCredit', fldMessageId='$MessageId', fldDeliveryStatus='$StatusText', fldSentTime='$fldSentTime' WHERE  PropertyID='SM002' and ItemID = " . $ItemID;
+            $sql2 = "UPDATE tblBookingRSMS SET fldBooleans = 0,fldSMSCount='$SMSCount', fldMessageId='$MessageId', fldDeliveryStatus='$StatusText', fldSentTime='$fldSentTime' WHERE  PropertyID='SM002' and ItemID = " . $ItemID;
             $stmt2 = sqlsrv_query($conn2, $sql2);
-            if ($stmt2 === false) {
+            $sql3 = "UPDATE tblCurrentBalance SET CurrentCredit = '$CurrentCredit'";
+            $stmt3 = sqlsrv_query($conn2, $sql3);
+            if ($stmt2 === false && $stmt3 === false) {
                 echo "<script>toastr.info('Update!', 'Error in query preparation/execution.');</script>";
                 // die(print_r(sqlsrv_errors(), true));
             } else {
@@ -123,7 +127,98 @@ require 'sqlconnect.php';
         }
     }
 
-    $ccreditsql = "SELECT * FROM tblBookingRSMS WHERE fldSentTime = (SELECT MAX(fldSentTime) FROM tblBookingRSMS)";
+    //Registration 
+
+    $sql = "SELECT ItemID, [Date], fldTime, PropertyID, PropertyName, fldRegNo, fldArrDate, fldDeptDate, fldNoOfNight, fldNoOfRoom, fldRoomNo, fldRoomType, fldGuestName, fldCompanyName, fldPhnNumber, fldEmail, fldPAX, fldRoomRent, fldBooleans, fldSentTime, fldMessageID, fldDeliveryStatus, fldSMSCount, fldCurrentCredit, fldBirtDate FROM tblCheckinOut WHERE PropertyID='SM002' and fldBooleans in (1, 2) order by fldBooleans";
+    $stmt = sqlsrv_query($conn, $sql);
+
+    if ($stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
+    }
+
+    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        $ItemID = $row['ItemID'];
+        $fldPhnNumber = $row['fldPhnNumber'];
+        $fldGuestName = strtoupper($row['fldGuestName']);
+        $fldBooleans = $row['fldBooleans'];
+        // Birthday
+        // $msg = "Dear $fldGuestName,
+        // Hotel Agrabad wishes you a very Happy Birthday! May your day be filled with unforgettable moments.
+        // Regards,
+        // Hotel Agrabad";
+
+        if ($fldBooleans === 1) {
+            // Checkin
+            $msg = "CI Dear $fldGuestName,
+We are excited to welcome you to Hotel Agrabad! We hope you had a comfortable journey and we are looking forward to your stay. Thank you for choosing Hotel Agrabad and we hope you have a wonderful stay!
+Regards,
+Hotel Agrabad";
+        } else {
+            // CheckOut
+            $msg = "CO Dear $fldGuestName,
+we hope you enjoyed your stay at Hotel Agrabad! We hope you had a comfortable stay and that our services met your expectations. Thank you for choosing Hotel Agrabad and we look forward to welcoming you back soon!
+Regards,
+Hotel Agrabad";
+        }
+
+        $newmsg = urlencode($msg);
+        $url = "https://api.mobireach.com.bd/SendTextMessage?Username=neesh&Password=Dhaka@5599&From=8801894449089&To=" . $fldPhnNumber . "&Message=" . $newmsg;
+        $contents = file_get_contents($url);
+        function get_string_between($string, $start, $end)
+        {
+            $string = ' ' . $string;
+            $ini = strpos($string, $start);
+            if ($ini == 0) return '';
+            $ini += strlen($start);
+            $len = strpos(
+                $string,
+                $end,
+                $ini
+            ) - $ini;
+            return substr(
+                $string,
+                $ini,
+                $len
+            );
+        }
+
+        $MessageId = get_string_between($contents, '<MessageId>', '</MessageId>');
+        // $Status = get_string_between($contents, '<Status>', '</Status>');
+        $StatusText = strtoupper(get_string_between($contents, '<StatusText>', '</StatusText>'));
+        // $ErrorCode = get_string_between($contents, '<ErrorCode>', '</ErrorCode>');
+        $SMSCount = get_string_between($contents, '<SMSCount>', '</SMSCount>');
+        $CurrentCredit = get_string_between($contents, '<CurrentCredit>', '</CurrentCredit>');
+        $fldSentTime = date('d-M-Y H:i:s A');
+
+        $serverName2 = "192.168.163.129";
+        $connectionInfo2 = array("Database" => "RSMS_API", "UID" => "NICE", "PWD" => "niAll@h#r@sulce");
+        $conn2 = sqlsrv_connect($serverName2, $connectionInfo2);
+
+        if ($conn2) {
+            $sql2 = "UPDATE tblCheckinOut SET fldBooleans = 0,fldSMSCount='$SMSCount', fldMessageId='$MessageId', fldDeliveryStatus='$StatusText', fldSentTime='$fldSentTime' WHERE  PropertyID='SM002' and ItemID = " . $ItemID;
+            $stmt2 = sqlsrv_query($conn2, $sql2);
+            $sql3 = "UPDATE tblCurrentBalance SET CurrentCredit = '$CurrentCredit'";
+            $stmt3 = sqlsrv_query($conn2, $sql3);
+            if ($stmt2 === false && $stmt3 === false) {
+                echo "<script>toastr.info('Update!', 'Error in query preparation/execution.');</script>";
+                // die(print_r(sqlsrv_errors(), true));
+            } else {
+                echo "<script>toastr.info('Update!', 'Update Successful.');</script>";
+            }
+            sqlsrv_free_stmt($stmt2);
+            sqlsrv_close($conn2);
+        } else {
+            echo "<script>toastr.info('Update Error!', 'Connection could not be established.');</script>";
+        }
+        if ($contents !== false) {
+            // echo "SMS has been send successfully to " . $fldPhnNumber . "<br>";
+            echo "<script>toastr.info('SMS!', 'SMS has been send successfully to $fldPhnNumber');</script>";
+        }
+    }
+
+
+    //Current Balance
+    $ccreditsql = "SELECT * FROM tblCurrentBalance";
     $stmt3 = sqlsrv_query($conn, $ccreditsql);
     if ($stmt3 === false) {
         die(print_r(sqlsrv_errors(), true));
@@ -150,7 +245,7 @@ require 'sqlconnect.php';
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link text-black" id="DataDiv2" href="#">Balance (৳): <?php while ($row = sqlsrv_fetch_array($stmt3, SQLSRV_FETCH_ASSOC)) {
-                                                                                                            echo $Balance = $row['fldCurrentCredit'];
+                                                                                                            echo $Balance = $row['CurrentCredit'];
                                                                                                         } ?> </a>
                                 </li>
                                 <li class="nav-item" style="margin-top: 7px;"><a class="nav-link text-black" href="#">Logout <i class="fas fa-right-from-bracket"></i> </a></li>
@@ -351,11 +446,10 @@ require 'sqlconnect.php';
                                                     <th scope="col">Property ID</th>
                                                     <th scope="col">Guest Name</th>
                                                     <th scope="col">Contact Number</th>
-                                                    <th scope="col">Booking No.</th>
+                                                    <th scope="col">Reg. No.</th>
                                                     <th scope="col">Arrival Date</th>
-                                                    <th scope="col">Departure Date</th>
-                                                    <th scope="col">Booking Advance</th>
-                                                    <th scope="col">Booleans</th>
+                                                    <th scope="col">Departure Date</th> 
+                                                    <th scope="col">Sent Date Time</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -368,7 +462,7 @@ require 'sqlconnect.php';
                                                         echo 'Please check your main server.';
                                                     }
 
-                                                    $sql = "SELECT  ItemID, [Date], PropertyID, PropertyName, fldGuestName, fldPhnNumber, fldBookingNo, fldArrDate, fldDeptDate, fldAdvance, fldBooleans FROM  tblBookingRSMS WHERE   (Date BETWEEN '$start_date' AND '$end_date') ORDER BY ItemID desc";
+                                                    $sql = "SELECT ItemID, [Date], fldTime, PropertyID, PropertyName, fldRegNo, fldArrDate, fldDeptDate, fldNoOfNight, fldNoOfRoom, fldRoomNo, fldRoomType, fldGuestName, fldCompanyName, fldPhnNumber, fldEmail, fldPAX, fldRoomRent, fldBooleans, fldSentTime, fldMessageID, fldDeliveryStatus, fldSMSCount, fldCurrentCredit, fldBirtDate FROM tblCheckinOut WHERE   (Date BETWEEN '$start_date' AND '$end_date') ORDER BY ItemID desc";
 
                                                     $stmt = sqlsrv_query($conn, $sql);
 
@@ -377,16 +471,14 @@ require 'sqlconnect.php';
                                                     }
                                                     while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                                                         $ItemID = $row["ItemID"];
-                                                        $Date = $row["Date"]->format('m-d-Y');
-                                                        $PropertyID = $row["PropertyID"];
-                                                        $PropertyName = $row["PropertyName"];
+                                                        $Date = $row["Date"]->format('d-M-Y');
+                                                        $PropertyID = $row["PropertyID"]; 
                                                         $GuestName = $row["fldGuestName"];
                                                         $PhnNumber = $row["fldPhnNumber"];
-                                                        $BookingNo = $row["fldBookingNo"];
-                                                        $ArrDate = $row["fldArrDate"]->format('m-d-Y');
-                                                        $DeptDate = $row["fldDeptDate"]->format('m-d-Y');
-                                                        $Advance = $row["fldAdvance"];
-                                                        $Booleans = $row["fldBooleans"];
+                                                        $RegNo = $row["fldRegNo"];
+                                                        $ArrDate = $row["fldArrDate"]->format('d-M-Y');
+                                                        $DeptDate = $row["fldDeptDate"]->format('d-M-Y'); 
+                                                        $SentTime = $row["fldSentTime"]->format('d-M-Y H:i:s A');
                                                 ?>
                                                         <tr>
                                                             <th scope="row"><?php echo $ItemID; ?></th>
@@ -394,19 +486,10 @@ require 'sqlconnect.php';
                                                             <td><?php echo $PropertyID; ?></td>
                                                             <td><?php echo $GuestName; ?></td>
                                                             <td><?php echo $PhnNumber; ?></td>
-                                                            <td><?php echo $BookingNo; ?></td>
+                                                            <td><?php echo $RegNo; ?></td>
                                                             <td><?php echo $ArrDate; ?></td>
                                                             <td><?php echo $DeptDate; ?></td>
-                                                            <td><?php echo $Advance; ?></td>
-                                                            <td><?php
-                                                                if ($Booleans == 2) {
-                                                                    echo "With Advance";
-                                                                } elseif ($Booleans == 1) {
-                                                                    echo "Without Advance";
-                                                                } else {
-                                                                    echo "SENT";
-                                                                }
-                                                                ?></td>
+                                                            <td><?php echo $SentTime; ?></td> 
                                                         </tr>
                                                 <?php }
                                                 } ?>
