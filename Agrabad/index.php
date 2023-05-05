@@ -1,4 +1,7 @@
 <?php
+
+use Vtiful\Kernel\Format;
+
 require 'sqlconnect.php';
 ?>
 <!doctype html>
@@ -128,7 +131,6 @@ require 'sqlconnect.php';
     }
 
     //Registration 
-
     $sql = "SELECT ItemID, [Date], fldTime, PropertyID, PropertyName, fldRegNo, fldArrDate, fldDeptDate, fldNoOfNight, fldNoOfRoom, fldRoomNo, fldRoomType, fldGuestName, fldCompanyName, fldPhnNumber, fldEmail, fldPAX, fldRoomRent, fldBooleans, fldSentTime, fldMessageID, fldDeliveryStatus, fldSMSCount, fldCurrentCredit, fldBirtDate FROM tblCheckinOut WHERE PropertyID='SM002' and fldBooleans in (1, 2) order by fldBooleans";
     $stmt = sqlsrv_query($conn, $sql);
 
@@ -149,13 +151,13 @@ require 'sqlconnect.php';
 
         if ($fldBooleans === 1) {
             // Checkin
-            $msg = "CI Dear $fldGuestName,
+            $msg = "Dear $fldGuestName,
 We are excited to welcome you to Hotel Agrabad! We hope you had a comfortable journey and we are looking forward to your stay. Thank you for choosing Hotel Agrabad and we hope you have a wonderful stay!
 Regards,
 Hotel Agrabad";
         } else {
             // CheckOut
-            $msg = "CO Dear $fldGuestName,
+            $msg = "Dear $fldGuestName,
 we hope you enjoyed your stay at Hotel Agrabad! We hope you had a comfortable stay and that our services met your expectations. Thank you for choosing Hotel Agrabad and we look forward to welcoming you back soon!
 Regards,
 Hotel Agrabad";
@@ -195,7 +197,7 @@ Hotel Agrabad";
         $conn2 = sqlsrv_connect($serverName2, $connectionInfo2);
 
         if ($conn2) {
-            $sql2 = "UPDATE tblCheckinOut SET fldBooleans = 0,fldSMSCount='$SMSCount', fldMessageId='$MessageId', fldDeliveryStatus='$StatusText', fldSentTime='$fldSentTime' WHERE  PropertyID='SM002' and ItemID = " . $ItemID;
+            $sql2 = "UPDATE tblCheckinOut SET fldBooleans = 0, fldSMSCount='$SMSCount', fldMessageId='$MessageId', fldDeliveryStatus='$StatusText', fldSentTime='$fldSentTime' WHERE  PropertyID='SM002' and ItemID = " . $ItemID;
             $stmt2 = sqlsrv_query($conn2, $sql2);
             $sql3 = "UPDATE tblCurrentBalance SET CurrentCredit = '$CurrentCredit'";
             $stmt3 = sqlsrv_query($conn2, $sql3);
@@ -213,6 +215,111 @@ Hotel Agrabad";
         if ($contents !== false) {
             // echo "SMS has been send successfully to " . $fldPhnNumber . "<br>";
             echo "<script>toastr.info('SMS!', 'SMS has been send successfully to $fldPhnNumber');</script>";
+        }
+    }
+
+    //BirthDay 
+
+    $datesql = "SELECT * FROM tblDate";
+    $datestmt = sqlsrv_query($conn, $datesql);
+    if ($datestmt === false) {
+        die(print_r(sqlsrv_errors(), true));
+    }
+
+    while ($daterow = sqlsrv_fetch_array($datestmt, SQLSRV_FETCH_ASSOC)) {
+        $SystemDate = $daterow['SDATE']->format('d-m');
+        $regsql = "SELECT *  FROM tblCheckinOut WHERE PropertyID='SM002' and fldCurrentCredit=0";
+        $regstmt = sqlsrv_query($conn, $regsql);
+
+        $findbtsql = "SELECT *  FROM tblCheckinOut WHERE PropertyID='SM002' and fldCurrentCredit=1";
+        $findbtstmt = sqlsrv_query($conn, $findbtsql);
+
+        if ($regstmt === false or $findbtstmt === false) {
+            die(print_r(sqlsrv_errors(), true));
+        }
+
+        while ($regrow = sqlsrv_fetch_array($regstmt, SQLSRV_FETCH_ASSOC)) { 
+            //Reg
+            $RegItemID = $regrow['ItemID'];
+            $fldPhnNumber = $regrow['fldPhnNumber'];
+            $fldGuestName = strtoupper($regrow['fldGuestName']);
+            $fldBooleans = $regrow['fldBooleans'];
+            $fldBirtDate = $regrow['fldBirtDate']->format('d-m');
+            if ($SystemDate == $fldBirtDate) {
+
+                $msg = "Dear $fldGuestName,
+Hotel Agrabad wishes you a very Happy Birthday! May your day be filled with unforgettable moments.
+Regards,
+Hotel Agrabad";
+
+                $newmsg = urlencode($msg);
+                $url = "https://api.mobireach.com.bd/SendTextMessage?Username=aghl&Password=Dhaka@5599&From=Agrabad%20HTL&To=" . $fldPhnNumber . "&Message=" . $newmsg;
+                $contents = file_get_contents($url);
+                function get_string_between($string, $start, $end)
+                {
+                    $string = ' ' . $string;
+                    $ini = strpos($string, $start);
+                    if ($ini == 0) return '';
+                    $ini += strlen($start);
+                    $len = strpos(
+                        $string,
+                        $end,
+                        $ini
+                    ) - $ini;
+                    return substr(
+                        $string,
+                        $ini,
+                        $len
+                    );
+                }
+
+                $MessageId = get_string_between($contents, '<MessageId>', '</MessageId>');
+                $StatusText = strtoupper(get_string_between($contents, '<StatusText>', '</StatusText>'));
+                $SMSCount = get_string_between($contents, '<SMSCount>', '</SMSCount>');
+                $CurrentCredit = get_string_between($contents, '<CurrentCredit>', '</CurrentCredit>');
+                $fldSentTime = date('d-M-Y H:i:s A');
+
+                $serverName2 = "192.168.163.129";
+                $connectionInfo2 = array("Database" => "RSMS_API", "UID" => "NICE", "PWD" => "niAll@h#r@sulce");
+                $conn2 = sqlsrv_connect($serverName2, $connectionInfo2);
+
+                if ($conn2) {
+                    $regsql2 = "UPDATE tblCheckinOut SET fldSMSCount='$SMSCount', fldMessageId='$MessageId', fldDeliveryStatus='$StatusText',fldCurrentCredit=1, fldSentTime='$fldSentTime' WHERE  PropertyID='SM002' and ItemID = " . $RegItemID;
+                    $regstmt2 = sqlsrv_query($conn2, $regsql2);
+                    $sql3 = "UPDATE tblCurrentBalance SET CurrentCredit = '$CurrentCredit'";
+                    $stmt3 = sqlsrv_query($conn2, $sql3);
+                    if ($regstmt2 === false && $stmt3 === false) {
+                        echo "<script>toastr.info('Update!', 'Error in query preparation/execution.');</script>";
+                    } else {
+                        echo "<script>toastr.info('Update!', 'Update Successful.');</script>";
+                    }
+                    sqlsrv_free_stmt($regstmt2);
+                    sqlsrv_close($conn2);
+                } else {
+                    echo "<script>toastr.info('Update Error!', 'Connection could not be established.');</script>";
+                }
+                if (
+                    $contents !== false
+                ) {
+                    echo "<script>toastr.info('SMS!', 'SMS has been send successfully to $fldPhnNumber');</script>";
+                }
+            } 
+        }
+
+        while ($findbtrow = sqlsrv_fetch_array($findbtstmt, SQLSRV_FETCH_ASSOC)) {
+            //findbt and uodate
+            $findbtItemID = $findbtrow['ItemID'];
+            $findbtfldBirtDate = $findbtrow['fldBirtDate']->format('d-m');
+
+            if ($SystemDate != $findbtfldBirtDate) {
+                $sql5 = "UPDATE tblCheckinOut SET  fldCurrentCredit=0 WHERE  PropertyID='SM002' and ItemID = " . $findbtItemID;
+                $stmt5 = sqlsrv_query($conn, $sql5);
+                if ($stmt5 === false) {
+                    echo "<script>toastr.info('Update!', 'Error in query preparation/execution.');</script>";
+                }
+                sqlsrv_free_stmt($stmt5);
+                sqlsrv_close($conn);
+            }
         }
     }
 
@@ -241,30 +348,16 @@ Hotel Agrabad";
                         <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
                             <ul class="navbar-nav">
                                 <li class="nav-item">
-                                    <a class="nav-link text-black" id="DataDiv" href="#">Server Status: <i class="fas fa-handshake-slash"></i> <?php echo $connectmsg; ?></a>
+                                    <a class="nav-link text-black" id="DataDiv" href="#">Server : <i class="fas fa-handshake-slash"></i> <?php echo $connectmsg; ?></a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link text-black" id="DataDiv2" href="#">Balance (৳): <?php while ($row = sqlsrv_fetch_array($stmt3, SQLSRV_FETCH_ASSOC)) {
                                                                                                             echo $Balance = $row['CurrentCredit'];
                                                                                                         } ?> </a>
                                 </li>
-                                <li class="nav-item" style="margin-top: 7px;"><a class="nav-link text-black" href="#">Logout <i class="fas fa-right-from-bracket"></i> </a></li>
+                                <!-- <li class="nav-item" style="margin-top: 7px;"><a class="nav-link text-black" href="#">Logout <i class="fas fa-right-from-bracket"></i> </a></li> -->
 
-                                <!-- Dropdown with user profile and name image -->
-                                <!-- <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle text-black" href="#" id="navbarDropdown" role="button" data-mdb-toggle="dropdown" aria-expanded="false">
-                                        <img src="./assets/images/hotellogo.png" alt="Profile Pic" height="60" class="me-2">
-                                        John Doe
-                                    </a>
-                                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                        <li><a class="dropdown-item" href="#">My Profile</a></li>
-                                        <li><a class="dropdown-item" href="#">Settings</a></li>
-                                        <li>
-                                            <hr class="dropdown-divider">
-                                        </li>
-                                        <li><a class="dropdown-item" href="#">Logout <i class="fas fa-right-from-bracket"></i> </a></li>
-                                    </ul>
-                                </li> -->
+
                             </ul>
                         </div>
                     </div>
@@ -274,7 +367,7 @@ Hotel Agrabad";
                     setInterval(function() {
                         $('#DataDiv').load(location.href + ' #DataDiv');
                         $('#DataDiv2').load(location.href + ' #DataDiv2');
-                    }, 0);
+                    }, 1000);
                 </script>
 
                 <div class="row mt-4">
@@ -290,9 +383,6 @@ Hotel Agrabad";
                                     <li class="nav-item" role="presentation">
                                         <a class="nav-link" id="ex1-tab-2" data-mdb-toggle="tab" href="#ex1-tabs-2" role="tab" aria-controls="ex1-tabs-2" aria-selected="false">Registration</a>
                                     </li>
-                                    <!-- <li class="nav-item" role="presentation">
-                                        <a class="nav-link" id="ex1-tab-3" data-mdb-toggle="tab" href="#ex1-tabs-3" role="tab" aria-controls="ex1-tabs-3" aria-selected="false">Tab 3</a>
-                                    </li> -->
                                 </ul>
                                 <!-- Tabs navs -->
 
@@ -310,8 +400,8 @@ Hotel Agrabad";
                                                     <input name="end_date" type="date" class="form-control" id="end_date" value="<?php echo date('m-d-Y'); ?>" required>
                                                 </div>
                                                 <div class="mt-3 col-md-2">
-                                                    <label for="submit" class="form-label"></label>
-                                                    <button type="submit" id="submit" name="submit" class="btn btn-primary waves-effect waves-light" style="margin-top: 5px;">SUBMIT</button>
+                                                    <label for="ressubmit" class="form-label"></label>
+                                                    <button type="submit" id="ressubmit" name="ressubmit" class="btn btn-primary waves-effect waves-light" style="margin-top: 5px;">SUBMIT</button>
                                                 </div>
                                             </div>
                                         </form>
@@ -432,8 +522,8 @@ Hotel Agrabad";
                                                     <input name="end_date" type="date" class="form-control" id="end_date" value="<?php echo date('m-d-Y'); ?>" required>
                                                 </div>
                                                 <div class="mt-3 col-md-2">
-                                                    <label for="submit" class="form-label"></label>
-                                                    <button type="submit" id="submit" name="submit" class="btn btn-primary waves-effect waves-light" style="margin-top: 5px;">SUBMIT</button>
+                                                    <label for="regsubmit" class="form-label"></label>
+                                                    <button type="submit" id="regsubmit" name="regsubmit" class="btn btn-primary waves-effect waves-light" style="margin-top: 5px;">SUBMIT</button>
                                                 </div>
                                             </div>
                                         </form>
@@ -448,7 +538,7 @@ Hotel Agrabad";
                                                     <th scope="col">Contact Number</th>
                                                     <th scope="col">Reg. No.</th>
                                                     <th scope="col">Arrival Date</th>
-                                                    <th scope="col">Departure Date</th> 
+                                                    <th scope="col">Departure Date</th>
                                                     <th scope="col">Sent Date Time</th>
                                                 </tr>
                                             </thead>
@@ -472,12 +562,12 @@ Hotel Agrabad";
                                                     while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                                                         $ItemID = $row["ItemID"];
                                                         $Date = $row["Date"]->format('d-M-Y');
-                                                        $PropertyID = $row["PropertyID"]; 
+                                                        $PropertyID = $row["PropertyID"];
                                                         $GuestName = $row["fldGuestName"];
                                                         $PhnNumber = $row["fldPhnNumber"];
                                                         $RegNo = $row["fldRegNo"];
                                                         $ArrDate = $row["fldArrDate"]->format('d-M-Y');
-                                                        $DeptDate = $row["fldDeptDate"]->format('d-M-Y'); 
+                                                        $DeptDate = $row["fldDeptDate"]->format('d-M-Y');
                                                         $SentTime = $row["fldSentTime"]->format('d-M-Y H:i:s A');
                                                 ?>
                                                         <tr>
@@ -489,7 +579,7 @@ Hotel Agrabad";
                                                             <td><?php echo $RegNo; ?></td>
                                                             <td><?php echo $ArrDate; ?></td>
                                                             <td><?php echo $DeptDate; ?></td>
-                                                            <td><?php echo $SentTime; ?></td> 
+                                                            <td><?php echo $SentTime; ?></td>
                                                         </tr>
                                                 <?php }
                                                 } ?>
@@ -548,8 +638,6 @@ Hotel Agrabad";
                 </div> <!-- container-fluid -->
             </div> <!-- content -->
         </div>
-
-        <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script> -->
 </body>
 
 </html>
