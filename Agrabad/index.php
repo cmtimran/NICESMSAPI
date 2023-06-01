@@ -76,7 +76,7 @@ require 'sqlconnect.php';
         $msg = "Greetings";
 
         $newmsg = urlencode($msg);
-        $url = "https://api.mobireach.com.bd/SendTextMessage?Username=neesh&Password=Dhaka@5599&From=8801894449089&To=" . $fldPhnNumber . "&Message=" . $newmsg;
+        $url = "https://api.mobireach.com.bd/SendTextMessage?Username=aghl&Password=Dhaka@5599&From=Agrabad%20HTL&To=" . $fldPhnNumber . "&Message=" . $newmsg;
         $contents = file_get_contents($url);
         function get_string_between($string, $start, $end)
         {
@@ -164,7 +164,7 @@ Hotel Agrabad";
         }
 
         $newmsg = urlencode($msg);
-        $url = "https://api.mobireach.com.bd/SendTextMessage?Username=neesh&Password=Dhaka@5599&From=8801894449089&To=" . $fldPhnNumber . "&Message=" . $newmsg;
+        $url = "https://api.mobireach.com.bd/SendTextMessage?Username=aghl&Password=Dhaka@5599&From=Agrabad%20HTL&To=" . $fldPhnNumber . "&Message=" . $newmsg;
         $contents = file_get_contents($url);
         function get_string_between($string, $start, $end)
         {
