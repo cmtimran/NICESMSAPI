@@ -55,7 +55,7 @@ require 'sqlconnect.php';
 <body>
     <?php
     //Reservation
-    $sql = "SELECT ItemID, [Date], fldTime, PropertyID, PropertyName, fldBookingNo, fldArrDate, fldDeptDate, fldNoOfNight, fldNoOfRoom, fldRoomNo, fldRoomType, fldGuestName, fldCompanyName, fldPhnNumber, fldEmail, fldPAX, fldAdvance, fldBooleans, fldSentTime, fldMessageID, fldDeliveryStatus, fldSMSCount, fldCurrentCredit FROM tblBookingRSMS WHERE (fldBooleans IN (1, 2)) and PropertyID in ('SM001', 'NC004') order by fldBooleans";
+    $sql = "SELECT ItemID, [Date], fldTime, PropertyID, PropertyName, fldBookingNo, fldArrDate, fldDeptDate, fldNoOfNight, fldNoOfRoom, fldRoomNo, fldRoomType, fldGuestName, fldCompanyName, fldPhnNumber, fldEmail, fldPAX, fldAdvance, fldBooleans, fldSentTime, fldMessageID, fldDeliveryStatus, fldSMSCount, fldCurrentCredit FROM tblBookingRSMS WHERE (fldBooleans IN (1, 2, 3)) and PropertyID in ('SM001') order by fldBooleans";
     $stmt = sqlsrv_query($conn, $sql);
 
     if ($stmt === false) {
@@ -63,7 +63,6 @@ require 'sqlconnect.php';
     }
 
     while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-
         $ItemID = $row['ItemID'];
         $fldPhnNumber = $row['fldPhnNumber'];
         $fldBookingNo = $row['fldBookingNo'];
@@ -73,12 +72,12 @@ require 'sqlconnect.php';
         $fldAdvance = $row['fldAdvance'];
         $fldBooleans = $row['fldBooleans'];
 
-        if ($fldBooleans === 1) {
+        if ($fldBooleans == 1) {
             $msg = "Greetings from Neeshorgo.
 Booking No.: " . $fldBookingNo . "
 Guest Name: " . $fldGuestName . "
-Arrival  Date: " . $fldArrDate . "
-Departure Date: " . $fldDeptDate . "
+Arrival  Date: " . $fldArrDate . " at 1PM
+Departure Date: " . $fldDeptDate . " at 11AM
 
 Please pay 50% advance to confirm your booking.
 Need NID/Passport to Check-In.
@@ -89,14 +88,21 @@ We do not accept any Credit Cards.
 
 E-Mail: neeshorgocox@gmail.com
 Web: www.neeshorgo.com.bd";
-        } else {
+        } elseif ($fldBooleans == 2) {
             $msg = "Greetings from Neeshorgo
 Booking No.: " . $fldBookingNo . "
 Guest Name: " . $fldGuestName . "
-Arrival  Date: " . $fldArrDate . "
-Departure Date: " . $fldDeptDate . "
-Advance Payment Received: " . $fldBookingAdvance . "/- tk 
+Arrival  Date: " . $fldArrDate . " at 1PM.
+Departure Date: " . $fldDeptDate . " at 11AM.
+Advance Payment Received: " . $fldAdvance . "/- tk 
 Need NID/Passport to Check-In.";
+        } else {
+            $msg = "Greetings from Neeshorgo
+Booking No.: " . $fldBookingNo . "
+Your booking has been canceled.
+Regards,
+Reservation Team
+01779 969554";
         }
         $newmsg = urlencode($msg);
         $url = "https://api.mobireach.com.bd/SendTextMessage?Username=neesh&Password=Dhaka@5599&From=8801894449089&To=" . $fldPhnNumber . "&Message=" . $newmsg;
@@ -132,7 +138,7 @@ Need NID/Passport to Check-In.";
         $conn2 = sqlsrv_connect($serverName2, $connectionInfo2);
 
         if ($conn2) {
-            $sql2 = "UPDATE tblBookingRSMS SET fldBooleans = 0,fldSMSCount='$SMSCount', fldMessageId='$MessageId', fldDeliveryStatus='$StatusText', fldSentTime='$fldSentTime' WHERE  PropertyID in ('SM001', 'NC004') and ItemID = " . $ItemID;
+            $sql2 = "UPDATE tblBookingRSMS SET fldBooleans = 0,fldSMSCount='$SMSCount', fldMessageId='$MessageId', fldDeliveryStatus='$StatusText', fldSentTime='$fldSentTime' WHERE  PropertyID in ('SM001') and ItemID = " . $ItemID;
             $stmt2 = sqlsrv_query($conn2, $sql2);
             $sql3 = "UPDATE tblCurrentBalance1 SET CurrentCredit = '$CurrentCredit' where PropertyCode ='SM001'";
             $stmt3 = sqlsrv_query($conn2, $sql3);
@@ -371,10 +377,7 @@ Need NID/Passport to Check-In.";
                         <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
                             <ul class="navbar-nav">
                                 <li class="nav-item">
-                                    <a class="nav-link text-black" id="DataDiv" href="#">Server : <i class="fas fa-handshake-slash"></i> <?php echo $connectmsg; ?></a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link text-black" id="DataDiv2" href="#">Balance (৳): <?php while ($row = sqlsrv_fetch_array($stmt3, SQLSRV_FETCH_ASSOC)) {
+                                    <a class="nav-link text-black" id="DataDiv" href="#">Server : <i class="fas fa-handshake-slash"></i> <?php echo $connectmsg; ?> | Balance (৳): <?php while ($row = sqlsrv_fetch_array($stmt3, SQLSRV_FETCH_ASSOC)) {
                                                                                                             echo $Balance = $row['CurrentCredit'];
                                                                                                         } ?> </a>
                                 </li>
@@ -385,13 +388,13 @@ Need NID/Passport to Check-In.";
                         </div>
                     </div>
                 </nav><!-- End Navbar -->
-
+<!-- 
                 <script type='text/javascript'>
                     setInterval(function() {
                         $('#DataDiv').load(location.href + ' #DataDiv');
                         $('#DataDiv2').load(location.href + ' #DataDiv2');
                     }, 1000);
-                </script>
+                </script>   -->
 
                 <div class="row mt-4">
                     <div class="col-12">
@@ -440,7 +443,7 @@ Need NID/Passport to Check-In.";
                                                 echo 'Please check your main server.';
                                             }
 
-                                            $sql = "SELECT  * FROM  tblBookingRSMS WHERE   (Date BETWEEN '$start_date' AND '$end_date') and PropertyID in ('SM001', 'NC004') ORDER BY ItemID desc";
+                                            $sql = "SELECT  * FROM  tblBookingRSMS WHERE   (Date BETWEEN '$start_date' AND '$end_date') and PropertyID in ('SM001') ORDER BY ItemID desc";
 
                                             $stmt = sqlsrv_query($conn, $sql);
 

@@ -57,14 +57,13 @@
                                 <?php
                                 require './sqlconnect.php';
                                 
-                                $sql = "SELECT ItemID, Date, PropertyID, PropertyName, fldGuestName, fldPhnNumber, fldBookingNo, fldArrDate, fldDeptDate, fldBookingAdvance, fldBooleans
-                                FROM tblBookingRSMS WHERE fldBooleans IN (1, 2) order by fldBooleans";
+                                $sql = "SELECT ItemID, Date, PropertyID, PropertyName, fldGuestName, fldPhnNumber, fldBookingNo, fldArrDate, fldDeptDate, fldBookingAdvance, fldBooleans FROM tblBookingRSMS WHERE fldBooleans IN (1, 2) order by fldBooleans";
                                 $stmt = sqlsrv_query($conn, $sql);
 
                                 if ($stmt === false) {
                                     die(print_r(sqlsrv_errors(), true));
                                 }
-
+ 
                                 while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                                     $ItemID = $row['ItemID'];
                                     $fldPhnNumber = $row['fldPhnNumber'];
@@ -75,7 +74,7 @@
                                     $fldBookingAdvance = $row['fldBookingAdvance'];
                                     $fldBooleans = $row['fldBooleans'];
 
-                                    if ($fldBooleans === 1) {
+                                    if ($fldBooleans === 1) { 
 $msg = "Greetings from Neeshorgo.
 Booking No.: " . $fldBookingNo . "
 Guest Name: " . $fldGuestName . "
