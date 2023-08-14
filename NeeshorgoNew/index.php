@@ -83,12 +83,11 @@ Please pay 50% advance to confirm your booking.
 Need NID/Passport to Check-In.
 
 Payment Procedures :
-We only accept CASH or
+# We only accept CASH or 
 Bkash: 01730063216 (Marchant)
 Nagad: 01894449085 (Marchant)
-We do not accept any Credit cards.
-Mail:Neeshorgocox@gmail.com
- Web:www.neeshorgo.com.bd
+
+# We do not accept any Credit cards.
 
 E-Mail: neeshorgocox@gmail.com
 Web: www.neeshorgo.com.bd";
