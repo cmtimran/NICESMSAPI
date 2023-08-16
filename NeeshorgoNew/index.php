@@ -109,6 +109,7 @@ Reservation Team
         }
         $newmsg = urlencode($msg);
         $url = "https://api.mobireach.com.bd/SendTextMessage?Username=neesh&Password=Dhaka@5599&From=8801894449089&To=" . $fldPhnNumber . "&Message=" . $newmsg;
+        //$url = "https://labapi.smartlabsms.com/smsapi?user=nsorgo&password=Dhaka@2021&sender=NeeshorgoHR&msisdn=" . $fldPhnNumber . "&smstext=". $newmsg;
         $contents = file_get_contents($url);
         function get_string_between($string, $start, $end)
         {
