@@ -108,8 +108,8 @@ Reservation Team
 01779 969554";
         }
         $newmsg = urlencode($msg);
-        $url = "https://api.mobireach.com.bd/SendTextMessage?Username=neesh&Password=Dhaka@5599&From=8801894449089&To=" . $fldPhnNumber . "&Message=" . $newmsg;
-        //$url = "https://labapi.smartlabsms.com/smsapi?user=nsorgo&password=Dhaka@2021&sender=NeeshorgoHR&msisdn=" . $fldPhnNumber . "&smstext=". $newmsg;
+        // $url = "https://api.mobireach.com.bd/SendTextMessage?Username=neesh&Password=Dhaka@5599&From=8801894449089&To=" . $fldPhnNumber . "&Message=" . $newmsg;
+        $url = "https://labapi.smartlabsms.com/smsapi?user=nsorgo&password=Dhaka@2021&sender=NeeshorgoHR&msisdn=". $fldPhnNumber."&smstext=".$newmsg;
         $contents = file_get_contents($url);
         function get_string_between($string, $start, $end)
         {
@@ -381,9 +381,7 @@ Reservation Team
                         <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
                             <ul class="navbar-nav">
                                 <li class="nav-item">
-                                    <a class="nav-link text-black" id="DataDiv" href="#">Server : <i class="fas fa-handshake-slash"></i> <?php echo $connectmsg; ?> | Balance (৳): <?php while ($row = sqlsrv_fetch_array($stmt3, SQLSRV_FETCH_ASSOC)) {
-                                                                                                            echo $Balance = $row['CurrentCredit'];
-                                                                                                        } ?> </a>
+                                    <a class="nav-link text-black" id="DataDiv" href="#">Server : <i class="fas fa-handshake-slash"></i> <?php echo $connectmsg; ?> </a>
                                 </li>
                                 <!-- <li class="nav-item" style="margin-top: 7px;"><a class="nav-link text-black" href="#">Logout <i class="fas fa-right-from-bracket"></i> </a></li> -->
 
@@ -392,13 +390,12 @@ Reservation Team
                         </div>
                     </div>
                 </nav><!-- End Navbar -->
-<!-- 
+ 
                 <script type='text/javascript'>
                     setInterval(function() {
-                        $('#DataDiv').load(location.href + ' #DataDiv');
-                        $('#DataDiv2').load(location.href + ' #DataDiv2');
-                    }, 1000);
-                </script>   -->
+                        $('#DataDiv').load(location.href + ' #DataDiv'); 
+                    }, 10000);
+                </script> 
 
                 <div class="row mt-4">
                     <div class="col-12">
